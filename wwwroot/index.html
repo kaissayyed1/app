@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OptByte</title>
+    <base href="/" />
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="image.jpg" />
+    <link href="app.styles.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        window.excelInterop = {
+            readExcel: function (fileContent) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const firstSheet = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheet];
+                            // Convert sheet to a 2D array (rows and columns as arrays of string values)
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true });
+
+                            // Format data and ensure integer values remain integers
+                            const formattedData = jsonData.map(row => row.map(cell => {
+                                if (typeof cell === 'number') {
+                                    // Check if the number is an integer, format it accordingly
+                                    if (Number.isInteger(cell)) {
+                                        return cell.toString(); // Keep as integer string
+                                    } else {
+                                        return cell.toFixed(2); // Format decimals
+                                    }
+                                }
+                                return cell ? String(cell) : "";
+                            }));
+                            resolve(formattedData);
+                        } catch (ex) {
+                            reject(ex);
+                        }
+                    };
+                    reader.onerror = function (ex) {
+                        reject(ex);
+                    };
+                    reader.readAsArrayBuffer(new Blob([fileContent]));
+                });
+            }
+        };
+    </script>
+    <script>
+        function saveAsFile(filename, bytesBase64) {
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(new Blob([new Uint8Array(bytesBase64)], { type: 'application/pdf' }));
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+
+
+
+
+</body>
+
+</html>

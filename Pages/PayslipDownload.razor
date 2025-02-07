@@ -1,0 +1,139 @@
+﻿@page "/payslip-download"
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<h3>Download Payslip</h3>
+
+<div class="mb-3">
+    <label for="year" class="form-label">Year</label>
+    <select id="year" @bind="selectedYear" class="form-select w-50">
+        <option value="">Select Year</option>
+        @foreach (var year in years)
+        {
+            <option value="@year">@year</option>
+        }
+    </select>
+</div>
+
+<div class="mb-3">
+    <label for="month" class="form-label">Month</label>
+    <select id="month" @bind="selectedMonth" class="form-select w-50">
+        <option value="">Select Month</option>
+        @foreach (var month in months)
+        {
+            <option value="@month">@month</option>
+        }
+    </select>
+</div>
+
+<div class="mb-3">
+    <label for="empName" class="form-label">Employee Name</label>
+    <select id="empName" @bind="selectedEmpName" class="form-select w-50">
+        <option value="">Select Employee</option>
+        @foreach (var emp in employees)
+        {
+            <option value="@emp">@emp</option>
+        }
+    </select>
+</div>
+
+<button @onclick="PreviewPayslip" class="btn btn-info me-2" >Preview</button>
+<button @onclick="DownloadPayslip" class="btn btn-primary">Download</button>
+
+@if (isError)
+{
+    <p class="text-danger">@errorMessage</p>
+}
+
+<!-- Modal Dialog for Preview -->
+@if (showPreviewModal)
+{
+    <div class="modal show d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Payslip Preview</h5>
+                    <button type="button" class="close" @onclick="ClosePreviewModal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <iframe srcdoc="@previewHtmlContent" style="width: 100%; height: 500px; border: none;"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="ClosePreviewModal">Close</button>
+                    <button type="button" class="btn btn-primary" @onclick="DownloadPayslip">Download PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<int> years = new();
+    private List<string> months = new();
+    private List<string> employees = new();
+    private string selectedYear = string.Empty;
+    private string selectedMonth = string.Empty;
+    private string selectedEmpName = string.Empty;
+    private bool isError = false;
+    private string errorMessage = string.Empty;
+    private bool showPreviewModal = false;
+    private string previewHtmlContent = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDropdownData();
+    }
+
+    private async Task LoadDropdownData()
+    {
+        years = await Http.GetFromJsonAsync<List<int>>("https://localhost:7263/api/payslip/years");
+        months = await Http.GetFromJsonAsync<List<string>>("https://localhost:7263/api/payslip/months");
+        employees = await Http.GetFromJsonAsync<List<string>>("https://localhost:7263/api/payslip/employees");
+    }
+
+    private async Task PreviewPayslip()
+    {
+        try
+        {
+            var response = await Http.GetAsync($"https://localhost:7263/api/payslip/preview/{selectedYear}/{selectedMonth}/{selectedEmpName}");
+            if (response.IsSuccessStatusCode)
+            {
+                previewHtmlContent = await response.Content.ReadAsStringAsync();
+                showPreviewModal = true;
+                isError = false;
+            }
+            else
+            {
+                isError = true;
+                errorMessage = $"Failed to load preview: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            errorMessage = $"Error loading preview: {ex.Message}";
+        }
+    }
+
+    private async Task DownloadPayslip()
+    {
+        try
+        {
+            var pdfBytes = await Http.GetByteArrayAsync($"https://localhost:7263/api/payslip/download/{selectedYear}/{selectedMonth}/{selectedEmpName}");
+            await JS.InvokeVoidAsync("saveAsFile", $"Payslip_{selectedEmpName}_{selectedMonth}_{selectedYear}.pdf", pdfBytes);
+            isError = false;
+        }
+        catch (HttpRequestException ex)
+        {
+            isError = true;
+            errorMessage = "Error downloading payslip. Please try again.";
+        }
+    }
+
+    private void ClosePreviewModal()
+    {
+        showPreviewModal = false;
+    }
+}
