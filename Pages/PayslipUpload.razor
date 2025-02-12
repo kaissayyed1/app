@@ -26,8 +26,8 @@
 @if (payslipData.Count > 0)
 {
     <div class="table-responsive mt-3">
-        <table class="table table-bordered">
-            <thead class="table-dark">
+        <table class="table table-bordered table-hover table-sm">
+            <thead class="table-light text-center">
                 <tr>
                     @foreach (var column in columnNames)
                     {
@@ -145,6 +145,16 @@
                 {
                     isError = true;
                     errorMessage = "Invalid file format. Column names do not match the required format.";
+                    payslipData.Clear();
+                    columnNames.Clear();
+                    return;
+                }
+
+                // Check if the file is empty (only header row present)
+                if (excelData.Count == 1)
+                {
+                    isError = true;
+                    errorMessage = "The uploaded file is empty. Please provide data.";
                     payslipData.Clear();
                     columnNames.Clear();
                     return;

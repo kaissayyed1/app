@@ -4,41 +4,43 @@
 
 <h3>Download Payslip</h3>
 
-<div class="mb-3">
-    <label for="year" class="form-label">Year</label>
-    <select id="year" @bind="selectedYear" class="form-select w-50">
-        <option value="">Select Year</option>
-        @foreach (var year in years)
-        {
-            <option value="@year">@year</option>
-        }
-    </select>
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label for="year" class="form-label">Year</label>
+        <select id="year" @bind="selectedYear" class="form-select">
+            <option value="">Select Year</option>
+            @foreach (var year in years)
+            {
+                <option value="@year">@year</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label for="month" class="form-label">Month</label>
+        <select id="month" @bind="selectedMonth" class="form-select">
+            <option value="">Select Month</option>
+            @foreach (var month in months)
+            {
+                <option value="@month">@month</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label for="empName" class="form-label">Employee Name</label>
+        <select id="empName" @bind="selectedEmpName" class="form-select">
+            <option value="">Select Employee</option>
+            @foreach (var emp in employees)
+            {
+                <option value="@emp">@emp</option>
+            }
+        </select>
+    </div>
 </div>
 
 <div class="mb-3">
-    <label for="month" class="form-label">Month</label>
-    <select id="month" @bind="selectedMonth" class="form-select w-50">
-        <option value="">Select Month</option>
-        @foreach (var month in months)
-        {
-            <option value="@month">@month</option>
-        }
-    </select>
+    <button @onclick="PreviewPayslip" class="btn btn-info me-2" disabled="@IsButtonDisabled">Preview</button>
+    <button @onclick="DownloadPayslip" class="btn btn-primary" disabled="@IsButtonDisabled">Download</button>
 </div>
-
-<div class="mb-3">
-    <label for="empName" class="form-label">Employee Name</label>
-    <select id="empName" @bind="selectedEmpName" class="form-select w-50">
-        <option value="">Select Employee</option>
-        @foreach (var emp in employees)
-        {
-            <option value="@emp">@emp</option>
-        }
-    </select>
-</div>
-
-<button @onclick="PreviewPayslip" class="btn btn-info me-2" >Preview</button>
-<button @onclick="DownloadPayslip" class="btn btn-primary">Download</button>
 
 @if (isError)
 {
@@ -80,6 +82,7 @@
     private string errorMessage = string.Empty;
     private bool showPreviewModal = false;
     private string previewHtmlContent = string.Empty;
+    private bool IsButtonDisabled => string.IsNullOrEmpty(selectedYear) || string.IsNullOrEmpty(selectedMonth) || string.IsNullOrEmpty(selectedEmpName);
 
     protected override async Task OnInitializedAsync()
     {
@@ -107,13 +110,18 @@
             else
             {
                 isError = true;
-                errorMessage = $"Failed to load preview: {response.ReasonPhrase}";
+                errorMessage = $"No data found for the selected year, month, and employee.";
             }
+        }
+        catch (HttpRequestException ex)
+        {
+            isError = true;
+            errorMessage = $"Error fetching data: {ex.Message}";
         }
         catch (Exception ex)
         {
             isError = true;
-            errorMessage = $"Error loading preview: {ex.Message}";
+            errorMessage = $"An unexpected error occurred: {ex.Message}";
         }
     }
 

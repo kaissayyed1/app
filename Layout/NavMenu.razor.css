@@ -65,6 +65,7 @@
     color: white;
 }
 
+
 @media (min-width: 641px) {
     .navbar-toggler {
         display: none;
